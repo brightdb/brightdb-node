@@ -1,0 +1,20 @@
+version: '3'
+services:
+  proxy: 
+    image: jwilder/nginx-proxy
+    ports: 
+      - 5454:443
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./proxy/certs:/etc/nginx/certs:ro
+  brightdb-node:
+    image: node:alpine
+    user: node
+    volumes:
+      - ./dist/:/home/node/app
+      - ./node_modules/:/home/node/node_modules
+    environment:
+      - VIRTUAL_HOST=local.pisys.eu
+    expose:
+      - "5454"
+    command: "node /home/node/app/index.js"

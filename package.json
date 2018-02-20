@@ -8,7 +8,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "babel": "babel src -d dist --presets=es2015,stage-2 "
+    "babel": "babel src -d dist --presets=es2015,stage-2",
+    "server" : "node dist/index.js"
   },
   "keywords": [],
   "author": "",
@@ -16,7 +17,9 @@
   "dependencies": {
     "ws": "^4.0.0"
   },
-  "devDependencies" : {
+  "devDependencies": {
+    "@babel/core": "^7.0.0-beta.38",
+    "@babel/preset-env": "^7.0.0-beta.37",
     "babel-cli": "^6.26.0",
     "babel-preset-stage-2": "^6.24.1"
   }
