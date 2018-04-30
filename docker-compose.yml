@@ -16,4 +16,4 @@ services:
       - ./node_modules/:/home/node/node_modules
     environment:
       - VIRTUAL_HOST=local.pisys.eu
-    command: "node /home/node/app/index.js"
+    command: "node /home/node/app/index.js local.pisys.eu"

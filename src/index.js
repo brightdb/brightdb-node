@@ -2,24 +2,20 @@ import Logger from 'logplease'
 import WebSocket from 'ws'
 import Registry from './SimpleRegistry'
 
+const dataspace = process.argv[2]
+
 const port = 5454
 
 let registerInquiries = {}
+let connectInquiries = {}
 
 let registry = new Registry()
+let peers = new Registry()
 
 let logger = Logger.create('Bright-Node')
+logger.debug('dataspace', dataspace)
 
-registry.on('result', message => {
-  if (!message.key) {
-    logger.error("received invalid 'result'",message)
-    return
-  }
-  let inq = registerInquiries[message.key]
-  if (!inq) {
-    logger.error("found no inquiry for " + message.key)
-    return
-  }
+let handleRegister = (inq, message) => {
   logger.debug('inquire state', inq.state)
   switch(inq.state) {
     case 'get':
@@ -27,6 +23,19 @@ registry.on('result', message => {
       inq.state = 'set'
       break
   }
+}
+
+registry.on('result', message => {
+  if (!message.key) {
+    logger.error("received invalid 'result'",message)
+    return
+  }
+  let inq = registerInquiries[message.key]
+  if (inq) {
+    handleRegister(inq, message)
+    return
+  } 
+  logger.error("found no inquiries for " + message.key)
 })
 
 registry.on('success', message => {
@@ -58,7 +67,54 @@ registry.on('success', message => {
   }
 })
 
+let handleConnect = (inq, message) => {
+  switch(inq.state) {
+    case 'incoming':
+      if(!message.value || !message.value.entries) {
+        logger.error("invalid peers value", message)
+        break
+      }
+      for(let peer of message.value.values()) {
+        if( peer == message.context ) continue
+        logger.debug(`sending peer uri ${peer} to ${message.context}`)
+        connections[message.context].send(
+          JSON.stringify(
+            { type : "peer", uri : peer}
+          ),
+          (error) => {
+            if(error) {
+              logger.error(`sending peer uri ${peer} to ${message.context} failed`, error)
+            }
+          }
+        )
+        logger.debug(`sending peer uri ${message.context} to ${peer}`)
+        connections[peer].send(
+          JSON.stringify({type:"peer", uri: message.context}), 
+          (error) => {
+            if(error) {
+              logger.error(`sending peer uri ${message.context} to ${peer} failed`, error)
+            }
+          })
+      }
+
+  }
+}
+
+peers.on('result', message => {
+  if (!message.key || !message.context) {
+    logger.error("received invalid 'result'",message)
+    return
+  }
+  let inq = connectInquiries[message.context]
+  if (inq) {
+    handleConnect(inq, message)
+    return
+  } 
+  logger.error("found no inquiries for " + message.key)
+})
+
 const wss = new WebSocket.Server({port : port})
+let connections = {}
 
 wss.on('connection', ws => {
   ws.on('message', message => {
@@ -78,6 +134,17 @@ wss.on('connection', ws => {
         registerInquiries[message.uri] = { ws : ws, state : 'get' }
         registry.message({type:'get', key: message.uri})
         break
+      case 'connect':
+        if(!message.uri) {
+          logger.error("received invalid 'connect'", message)
+          break
+        }
+        connections[message.uri] = ws
+        connectInquiries[message.uri] = { state : 'incoming', dataspace : message.dataspace }
+        peers.message({type:'add', key: dataspace, value : message.uri})
+        peers.message({type:'get', key: dataspace, context : message.uri})
+        break
+        
       default:
         logger.error("unknown message %s", message)
     }

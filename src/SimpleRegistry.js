@@ -38,7 +38,7 @@ export default function Registry() {
         }
         registry[message.key] = message.value
         logger.debug('send success for ' + message.key)
-        setTimeout(() => send('success', {key: message.key}), 1)
+        setTimeout(() => send('success', {key: message.key, context : message.context}), 1)
         break
       case 'get':
         if(!message.key) {
@@ -46,8 +46,16 @@ export default function Registry() {
           break
         }
         let value = registry[message.key]
-        setTimeout(() => send('result', {key: message.key, value : value}), 1)
+        setTimeout(() => send('result', {key: message.key, value : value, context : message.context}), 1)
         break
+      case 'add':
+        if(!message.key || !message.value) {
+          logger.error("Received invalid 'set'",message)
+          break
+        }
+        let set = new Set(registry[message.key])
+        set.add(message.value)
+        registry[message.key] = set
     }
   }
 }
