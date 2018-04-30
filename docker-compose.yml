@@ -8,20 +8,12 @@ services:
       - /var/run/docker.sock:/tmp/docker.sock:ro
       - ./proxy/certs:/etc/nginx/certs:ro
   brightdb-node:
-    image: node:alpine
+    build: .
+    container_name: brightdb-node
     user: node
     volumes:
       - ./dist/:/home/node/app
       - ./node_modules/:/home/node/node_modules
     environment:
       - VIRTUAL_HOST=local.pisys.eu
-    expose:
-      - "5454"
-    links:
-      - redis:redis
     command: "node /home/node/app/index.js"
-  redis:
-    image: redis:alpine
-    volumes:
-      - ./data:/data
-    command: "redis-server --append-only yes"
