@@ -117,6 +117,19 @@ peers.on('result', message => {
 const wss = new WebSocket.Server({port : port})
 let connections = {}
 
+let close = uri => {
+  logger.info(`closing connection to ${uri}`)
+  delete connections[uri]
+  peers.message({type:'remove', key: dataspace, value : uri})
+  for( let peer in connections ) {
+    connections[peer].send(JSON.stringify({type: "remove_peer", uri : uri}), error => {
+      if(error) {
+        logger.error(`sending remove_peer to ${peer} failed`, error)
+      }
+    })
+  }
+}
+
 wss.on('connection', ws => {
   ws.on('message', message => {
     logger.info('received: %s', message)
@@ -141,6 +154,7 @@ wss.on('connection', ws => {
           break
         }
         connections[message.uri] = ws
+        ws.on('close', () => close(message.uri))
         connectInquiries[message.uri] = { state : 'incoming', dataspace : message.dataspace }
         peers.message({type:'add', key: dataspace, value : message.uri})
         peers.message({type:'get', key: dataspace, context : message.uri})
@@ -167,5 +181,6 @@ wss.on('connection', ws => {
         logger.error("unknown message %s", message)
     }
   })
+
  
 });

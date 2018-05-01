@@ -52,12 +52,27 @@ export default function Registry() {
         break
       case 'add':
         if(!message.key || !message.value) {
-          logger.error("Received invalid 'set'",message)
+          logger.error("Received invalid 'add'",message)
           break
         }
-        let set = new Set(registry[message.key])
-        set.add(message.value)
-        registry[message.key] = set
+        {
+          let set = new Set(registry[message.key])
+          set.add(message.value)
+          registry[message.key] = set
+        }
+        break
+      case 'remove':
+        if(!message.key || !message.value) {
+          logger.error("Received invalid 'remove'",message)
+          break
+        }
+        { 
+          let set = new Set(registry[message.key])
+          set.delete(message.value)
+          registry[message.key] = set
+        }
+        break
+
     }
   }
 }
