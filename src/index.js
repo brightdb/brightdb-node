@@ -74,6 +74,7 @@ let handleConnect = (inq, message) => {
         logger.error("invalid peers value", message)
         break
       }
+      logger.debug('peers', message.value.values())
       for(let peer of message.value.values()) {
         if( peer == message.context ) continue
         logger.debug(`sending peer uri ${peer} to ${message.context}`)
@@ -143,6 +144,23 @@ wss.on('connection', ws => {
         connectInquiries[message.uri] = { state : 'incoming', dataspace : message.dataspace }
         peers.message({type:'add', key: dataspace, value : message.uri})
         peers.message({type:'get', key: dataspace, context : message.uri})
+        break
+      case 'signal':
+        if(!message.from || !message.to || !message.signal) {
+          logger.error("received invalid 'signal'", message)
+          break
+        }
+        // TODO check that from is allowed to do this
+        if(!connections[message.to]) {
+          logger.error(`peer ${message.to} is offline`, message)
+          break
+        }
+        connections[message.to].send( JSON.stringify(
+          { type : 'signal'
+          , peer : message.from
+          , signal : message.signal
+          }
+        ))
         break
         
       default:

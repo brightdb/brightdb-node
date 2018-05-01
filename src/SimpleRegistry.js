@@ -23,9 +23,11 @@ export default function Registry() {
   }
 
   const send = (event, msg) => {
-    for(let handler of handlers[event]) {
-      handler(msg)
-    }
+    setTimeout(() => {
+      for(let handler of handlers[event]) {
+        handler(msg)
+      }
+    }, 1)
   }
 
   this.message = (message) => {
@@ -38,7 +40,7 @@ export default function Registry() {
         }
         registry[message.key] = message.value
         logger.debug('send success for ' + message.key)
-        setTimeout(() => send('success', {key: message.key, context : message.context}), 1)
+        send('success', {key: message.key, context : message.context})
         break
       case 'get':
         if(!message.key) {
@@ -46,7 +48,7 @@ export default function Registry() {
           break
         }
         let value = registry[message.key]
-        setTimeout(() => send('result', {key: message.key, value : value, context : message.context}), 1)
+        send('result', {key: message.key, value : value, context : message.context})
         break
       case 'add':
         if(!message.key || !message.value) {
