@@ -140,6 +140,10 @@ wss.on('connection', ws => {
       return
     }
     switch (message.type) {
+      case 'ping' :
+        logger.debug('ping')
+        ws.send(JSON.stringify({'type': 'pong'}))
+        break
       case 'register':
         if( !message.uri ) {
           logger.error("received invalid 'register', message was %s", message)
