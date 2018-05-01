@@ -142,7 +142,11 @@ wss.on('connection', ws => {
     switch (message.type) {
       case 'ping' :
         logger.debug('ping')
-        ws.send(JSON.stringify({'type': 'pong'}))
+        ws.send(JSON.stringify({'type': 'pong'}), (err) => {
+          if(err) {
+            logger.error('error on pong', err)
+          }
+        })
         break
       case 'register':
         if( !message.uri ) {
@@ -177,6 +181,22 @@ wss.on('connection', ws => {
           { type : 'signal'
           , peer : message.from
           , signal : message.signal
+          }
+        ))
+        break
+      case 'wanna_connect':
+        if(!message.from || !message.to) {
+          logger.error("received invalid 'wanna_connect'", message)
+          break
+        }
+        // TODO check that from is allowed to do this
+        if(!connections[message.to]) {
+          logger.error(`peer ${message.to} is offline`, message)
+          break
+        }
+        connections[message.to].send( JSON.stringify(
+          { type : 'wanna_connect'
+          , peer : message.from
           }
         ))
         break
